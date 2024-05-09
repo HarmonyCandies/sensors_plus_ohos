@@ -1,11 +1,11 @@
 {
-  name: 'entry',
-  version: '1.0.0',
-  description: 'Please describe the basic information.',
-  main: '',
-  author: '',
-  license: '',
-  dependencies: {
-    '@ohos/sensors_plus_ohos': 'file:./har/sensors_plus_ohos.har',
-  },
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "sensors_plus_ohos": "file:../har/sensors_plus_ohos.har"
+  }
 }
