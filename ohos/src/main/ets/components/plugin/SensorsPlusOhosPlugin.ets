@@ -1,201 +1,127 @@
 import {
+  EventChannel,
   FlutterPlugin,
-  FlutterPluginBinding
-} from '@ohos/flutter_ohos/src/main/ets/embedding/engine/plugins/FlutterPlugin';
-import MethodChannel, {
+  FlutterPluginBinding,
+  MethodCall,
   MethodCallHandler,
+  MethodChannel,
   MethodResult
-} from '@ohos/flutter_ohos/src/main/ets/plugin/common/MethodChannel';
-import MethodCall from '@ohos/flutter_ohos/src/main/ets/plugin/common/MethodCall';
-import EventChannel, { StreamHandler, EventSink } from '@ohos/flutter_ohos/src/main/ets/plugin/common/EventChannel';
-import { BinaryMessenger, MethodCodec } from '@ohos/flutter_ohos';
-import { TaskQueue } from '@ohos/flutter_ohos/src/main/ets/plugin/common/BinaryMessenger';
-import sensor from '@ohos.sensor';
-import { BusinessError } from '@kit.BasicServicesKit';
+} from "@ohos/flutter_ohos";
+import {
+  AccelerometerStreamHandlerPlus,
+  GyroscopeStreamHandlerPlus,
+  MagnetometerStreamHandlerPlus,
+  PressureStreamHandlerPlus,
+  SensorStreamHandlerImpl,
+  UserAccelerometerStreamHandlerPlus
+} from "./StreamHandlerPlus";
 
-/** SensorsPlusOhosPlugin **/
+const METHOD_CHANNEL_NAME = "dev.fluttercommunity.plus/sensors/method";
+const ACCELEROMETER_CHANNEL_NAME = "dev.fluttercommunity.plus/sensors/accelerometer";
+const GYROSCOPE_CHANNEL_NAME = "dev.fluttercommunity.plus/sensors/gyroscope";
+const USER_ACCELEROMETER_CHANNEL_NAME = "dev.fluttercommunity.plus/sensors/user_accel";
+const MAGNETOMETER_CHANNEL_NAME = "dev.fluttercommunity.plus/sensors/magnetometer";
+const BAROMETER_CHANNEL_NAME = "dev.fluttercommunity.plus/sensors/barometer";
+
 export default class SensorsPlusOhosPlugin implements FlutterPlugin, MethodCallHandler {
-  private channel: MethodChannel | null = null;
-  private accelerometerEventChannel: SensorsEventChannel | null = null;
-  private userAccelerometerEventChannel: SensorsEventChannel | null = null;
-  private gyroscopeEventChannel: SensorsEventChannel | null = null;
-  private magnetometerEventChannel: SensorsEventChannel | null = null;
-
-  constructor() {
-  }
+  private methodChannel: MethodChannel | undefined
+  private accelerometerChannel: EventChannel | undefined
+  private userAccelerometerChannel: EventChannel | undefined
+  private gyroscopeChannel: EventChannel | undefined
+  private magnetometerChannel: EventChannel | undefined
+  private barometerChannel: EventChannel | undefined
+  private accelerometerStreamHandler: SensorStreamHandlerImpl | undefined
+  private userAccelerometerStreamHandler: SensorStreamHandlerImpl | undefined
+  private gyroscopeStreamHandler: SensorStreamHandlerImpl | undefined
+  private magnetometerStreamHandler: SensorStreamHandlerImpl | undefined
+  private barometerStreamHandler: SensorStreamHandlerImpl | undefined
 
   getUniqueClassName(): string {
-    return "SensorsPlusOhosPlugin"
+    return "SensorsPlusOhosPlugin";
   }
 
   onAttachedToEngine(binding: FlutterPluginBinding): void {
-    this.channel = new MethodChannel(binding.getBinaryMessenger(), "dev.fluttercommunity.plus/sensors/method");
-    this.channel.setMethodCallHandler(this)
-    this.accelerometerEventChannel = new SensorsEventChannel(binding.getBinaryMessenger(), sensor.SensorId.ACCELEROMETER);
-    this.userAccelerometerEventChannel = new SensorsEventChannel(binding.getBinaryMessenger(), sensor.SensorId.LINEAR_ACCELEROMETER);
-    this.gyroscopeEventChannel = new SensorsEventChannel(binding.getBinaryMessenger(), sensor.SensorId.GYROSCOPE);
-    this.magnetometerEventChannel = new SensorsEventChannel(binding.getBinaryMessenger(), sensor.SensorId.MAGNETIC_FIELD);
-
+    this.setupMethodCallHandler(binding);
+    this.setupEventChannels(binding);
   }
 
   onDetachedFromEngine(binding: FlutterPluginBinding): void {
-    if (this.channel != null) {
-      this.channel.setMethodCallHandler(null)
-    }
-
-    if (this.accelerometerEventChannel != null) {
-      this.accelerometerEventChannel.onDetachedFromEngine();
-      this.accelerometerEventChannel = null;
-    }
-    if (this.userAccelerometerEventChannel != null) {
-      this.userAccelerometerEventChannel.onDetachedFromEngine();
-      this.userAccelerometerEventChannel = null;
-    }
-    if (this.gyroscopeEventChannel != null) {
-      this.gyroscopeEventChannel.onDetachedFromEngine();
-      this.gyroscopeEventChannel = null;
-    }
-    if (this.magnetometerEventChannel != null) {
-      this.magnetometerEventChannel.onDetachedFromEngine();
-      this.magnetometerEventChannel = null;
-    }
+    this.disposeMethodChannel();
+    this.disposeEventChannels();
   }
 
   onMethodCall(call: MethodCall, result: MethodResult): void {
-    if (call.method == "setAccelerationSamplingPeriod") {
-      this.accelerometerEventChannel?.setSamplingPeriod(call.args as number);
-      result.success(null)
-    }
-    else if (call.method == "setGyroscopeSamplingPeriod") {
-      this.gyroscopeEventChannel?.setSamplingPeriod(call.args as number);
-      result.success(null)
-    }
-    else if (call.method == "setUserAccelerometerSamplingPeriod") {
-      this.userAccelerometerEventChannel?.setSamplingPeriod(call.args as number);
-      result.success(null)
-    }
-    else if (call.method == "setMagnetometerSamplingPeriod") {
-      this.magnetometerEventChannel?.setSamplingPeriod(call.args as number);
-      result.success(null)
-    }
-    else {
-      result.notImplemented()
-    }
-  }
-}
-
-
-class SensorsEventChannel extends EventChannel {
-  private handler: SensorsStreamHandler | null = null;
-
-  constructor(messenger: BinaryMessenger, type: sensor.SensorId, codec?: MethodCodec, taskQueue?: TaskQueue) {
-    let name: string = '';
-    switch (type) {
-      case sensor.SensorId.ACCELEROMETER:
-        name = 'dev.fluttercommunity.plus/sensors/accelerometer';
+    let streamHandler: SensorStreamHandlerImpl | undefined;
+    switch (call.method) {
+      case "setAccelerationSamplingPeriod":
+        streamHandler = this.accelerometerStreamHandler;
         break;
-      case sensor.SensorId.LINEAR_ACCELEROMETER:
-        name = 'dev.fluttercommunity.plus/sensors/user_accel';
+      case "setUserAccelerometerSamplingPeriod":
+        streamHandler = this.userAccelerometerStreamHandler;
         break;
-      case sensor.SensorId.GYROSCOPE:
-        name = 'dev.fluttercommunity.plus/sensors/gyroscope';
+      case "setGyroscopeSamplingPeriod":
+        streamHandler = this.gyroscopeStreamHandler;
         break;
-      case sensor.SensorId.MAGNETIC_FIELD:
-        name = 'dev.fluttercommunity.plus/sensors/magnetometer';
+      case "setMagnetometerSamplingPeriod":
+        streamHandler = this.magnetometerStreamHandler;
+        break;
+      case "setBarometerSamplingPeriod":
+        streamHandler = this.barometerStreamHandler;
         break;
       default:
-        break;
+        streamHandler = undefined;
     }
-    super(messenger, name, codec, taskQueue);
-    this.handler = new SensorsStreamHandler(type);
-    this.setStreamHandler(this.handler);
-  }
 
-  onDetachedFromEngine(): void {
-    this.setStreamHandler(null);
-    if (this.handler != null) {
-      this.handler.unsubscribe();
-      this.handler = null;
+    if (streamHandler) {
+      streamHandler.samplingPeriod = call.args as number;
+      result.success(null);
+    } else {
+      result.notImplemented();
     }
   }
 
-  setSamplingPeriod(microseconds: number): void {
-    this.handler?.setSamplingPeriod(microseconds);
+  setupMethodCallHandler(binding: FlutterPluginBinding): void {
+    this.methodChannel = new MethodChannel(binding.getBinaryMessenger(), METHOD_CHANNEL_NAME);
+    this.methodChannel.setMethodCallHandler(this);
+  }
+
+  setupEventChannels(binding: FlutterPluginBinding): void {
+    this.accelerometerChannel = new EventChannel(binding.getBinaryMessenger(), ACCELEROMETER_CHANNEL_NAME);
+    this.accelerometerStreamHandler = AccelerometerStreamHandlerPlus();
+    this.accelerometerChannel.setStreamHandler(this.accelerometerStreamHandler);
+
+    this.userAccelerometerChannel = new EventChannel(binding.getBinaryMessenger(), USER_ACCELEROMETER_CHANNEL_NAME);
+    this.userAccelerometerStreamHandler = UserAccelerometerStreamHandlerPlus();
+    this.userAccelerometerChannel.setStreamHandler(this.userAccelerometerStreamHandler);
+
+    this.gyroscopeChannel = new EventChannel(binding.getBinaryMessenger(), GYROSCOPE_CHANNEL_NAME);
+    this.gyroscopeStreamHandler = GyroscopeStreamHandlerPlus();
+    this.gyroscopeChannel.setStreamHandler(this.gyroscopeStreamHandler);
+
+    this.magnetometerChannel = new EventChannel(binding.getBinaryMessenger(), MAGNETOMETER_CHANNEL_NAME);
+    this.magnetometerStreamHandler = MagnetometerStreamHandlerPlus();
+    this.magnetometerChannel.setStreamHandler(this.magnetometerStreamHandler);
+
+    this.barometerChannel = new EventChannel(binding.getBinaryMessenger(), BAROMETER_CHANNEL_NAME);
+    this.barometerStreamHandler = PressureStreamHandlerPlus();
+    this.barometerChannel.setStreamHandler(this.barometerStreamHandler);
+  }
+
+  disposeMethodChannel(): void {
+    this.methodChannel?.setMethodCallHandler(null);
+  }
+
+  disposeEventChannels(): void {
+    this.accelerometerChannel?.setStreamHandler(null);
+    this.userAccelerometerChannel?.setStreamHandler(null);
+    this.gyroscopeChannel?.setStreamHandler(null);
+    this.magnetometerChannel?.setStreamHandler(null);
+    this.barometerChannel?.setStreamHandler(null);
+
+    this.accelerometerStreamHandler?.onCancel(null);
+    this.userAccelerometerStreamHandler?.onCancel(null);
+    this.gyroscopeStreamHandler?.onCancel(null);
+    this.magnetometerStreamHandler?.onCancel(null);
+    this.barometerStreamHandler?.onCancel(null);
   }
 }
-
-class SensorsStreamHandler implements StreamHandler {
-  constructor(type: sensor.SensorId) {
-    this.type = type;
-  }
-
-  type: sensor.SensorId;
-  samplingPeriod: number = 200000;
-  private events: EventSink | null = null;
- // private  eventMap: Map<sensor.SensorId, EventSink> = new Map<sensor.SensorId, EventSink>();
-
-  setSamplingPeriod(microseconds: number): void {
-    this.samplingPeriod = microseconds;
-    this.subscribe();
-  }
-
-  onListen(args: ESObject, events: EventSink): void {
-    this.events = events;
-    this.subscribe();
-  }
-
-  onCancel(args: ESObject): void {
-    this.unsubscribe();
-    this.events = null;
-  }
-
-  subscribe(): void {
-    try {
-      this.unsubscribe();
-      switch (this.type) {
-        case sensor.SensorId.ACCELEROMETER:
-          sensor.on(this.type, this.onCallBack.bind(this), { interval: this.samplingPeriod });
-          break;
-        case sensor.SensorId.LINEAR_ACCELEROMETER:
-          sensor.on(this.type, this.onCallBack.bind(this), { interval: this.samplingPeriod });
-          break;
-        case sensor.SensorId.GYROSCOPE:
-          sensor.on(this.type, this.onCallBack.bind(this), { interval: this.samplingPeriod });
-          break;
-        case sensor.SensorId.MAGNETIC_FIELD:
-          sensor.on(this.type, this.onCallBack.bind(this), { interval: this.samplingPeriod });
-          break;
-        default:
-          break;
-      }
-
-    } catch (error) {
-      let e: BusinessError = error as BusinessError;
-      console.error(`Failed to invoke on. Code: ${e.code}, message: ${e.message}`);
-    }
-  }
-
-  unsubscribe(): void {
-    switch (this.type) {
-      case sensor.SensorId.ACCELEROMETER:
-        sensor.off(this.type, this.onCallBack.bind(this));
-        break;
-      case sensor.SensorId.LINEAR_ACCELEROMETER:
-        sensor.off(this.type, this.onCallBack.bind(this));
-        break;
-      case sensor.SensorId.GYROSCOPE:
-        sensor.off(this.type, this.onCallBack.bind(this));
-        break;
-      case sensor.SensorId.MAGNETIC_FIELD:
-        sensor.off(this.type, this.onCallBack.bind(this));
-        break;
-      default:
-        break;
-    }
-  }
-
-  onCallBack(data: sensor.AccelerometerResponse): void {
-    this.events?.success([data.x, data.y, data.z]);
-  }
-}
-

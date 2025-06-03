@@ -1,4 +1,5 @@
 {
+  "modelVersion": "5.0.5",
   "name": "sensors_plus_ohos_example",
   "version": "1.0.0",
   "description": "Please describe the basic information.",
@@ -12,6 +13,8 @@
     "@ohos/hypium": "1.0.6"
   },
   "overrides": {
-    "@ohos/flutter_ohos": "file:./har/flutter.har"
+    "@ohos/flutter_ohos": "file:./har/flutter.har",
+    "sensors_plus_ohos": "../../ohos",
+    "@ohos/flutter_module": "file:./entry",
   }
 }

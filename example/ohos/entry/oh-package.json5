@@ -6,6 +6,6 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "sensors_plus_ohos": "file:../har/sensors_plus_ohos.har"
+    "sensors_plus_ohos": "../../../ohos"
   }
 }
