@@ -1,7 +1,7 @@
 name: sensors_plus_ohos
 description: Flutter plugin for accessing accelerometer, gyroscope, and magnetometer sensors On OpenHarmony
 repository: https://github.com/harmonycandies/sensors_plus_ohos
-version: 0.0.3
+version: 0.1.0
 topics:
   - sensors
   - sensors-plus
@@ -11,17 +11,18 @@ topics:
 
 
 environment:
-  sdk: '>=2.19.6 <3.0.0'
-  flutter: ">=3.7.0"
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
 
 dependencies:
   flutter:
     sdk: flutter
  
 dev_dependencies:
+  test: ^1.22.0
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+  flutter_lints: ">=2.0.1 <6.0.0"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

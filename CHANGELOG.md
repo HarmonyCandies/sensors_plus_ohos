@@ -1,3 +1,8 @@
+## 0.1.0
+
+* Upgrade to sensors_plus v6.1.1 implementation for OpenHarmony
+* Minimum Flutter version requirement updated to 3.19.0
+
 ## 0.0.3
 
 * Update plugin structure
