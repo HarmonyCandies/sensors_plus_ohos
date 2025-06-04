@@ -8,10 +8,10 @@ const timestampMicroAtBoot =
 function transformData(x: number, y: number, z: number, timestamp: number): number[] {
   const timestampSince1970Micro = timestampMicroAtBoot + timestamp / 1000;
   const data = [
-    x,
-    y,
-    z,
-    timestampSince1970Micro,
+    Number.isInteger(x) ? x + 0.00000000001 : x,
+    Number.isInteger(y) ? y + 0.00000000001 : y,
+    Number.isInteger(z) ? z + 0.00000000001 : z,
+    Number.isInteger(timestampSince1970Micro) ? timestampSince1970Micro + 0.00000000001 : timestampSince1970Micro
   ];
   return data;
 }
@@ -125,9 +125,11 @@ export const PressureStreamHandlerPlus = () => new SensorStreamHandlerImpl(
   sensor.SensorId.BAROMETER,
   (response: sensor.Response) => {
     const resp = response as sensor.BarometerResponse;
+    const pressure = resp.pressure;
+    const timestampSince1970Micro = timestampMicroAtBoot + resp.timestamp / 1000;
     return [
-      resp.pressure,
-      timestampMicroAtBoot + resp.timestamp / 1000,
+      Number.isInteger(resp.pressure) ? resp.pressure + 0.00000000001 : resp.pressure,
+      Number.isInteger(timestampSince1970Micro) ? timestampSince1970Micro + 0.00000000001 : timestampSince1970Micro
     ]
   }
 );

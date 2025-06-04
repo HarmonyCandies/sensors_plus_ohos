@@ -18,7 +18,7 @@ The OpenHarmony implementation of [`sensors_plus`][1].
 ```yaml
 dependencies:
   sensors_plus: 6.1.1
-  sensors_plus_ohos: 0.1.0
+  sensors_plus_ohos: 0.1.1
 ```
 
 在你的项目的 `module.json5` 文件中增加以下权限设置。

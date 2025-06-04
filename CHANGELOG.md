@@ -1,3 +1,7 @@
+## 0.1.1
+
+* Fix data type cast error caused by sensors_plus_platform_interface
+
 ## 0.1.0
 
 * Upgrade to sensors_plus v6.1.1 implementation for OpenHarmony
