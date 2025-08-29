@@ -19,6 +19,7 @@ function transformData(x: number, y: number, z: number, timestamp: number): numb
 export abstract class SensorStreamHandler implements StreamHandler {
   protected events: EventSink | undefined;
   _samplingPeriod: number = 200000;
+  _hasListeners: boolean = false;
 
   get samplingPeriod(): number {
     return this._samplingPeriod;
@@ -35,11 +36,16 @@ export abstract class SensorStreamHandler implements StreamHandler {
 
   protected setupSensor(sensorId: number, callback: (response: sensor.Response) => void): void {
     sensor.on(sensorId, callback, { interval: this.samplingPeriodInNanos });
+    this._hasListeners = true;
   }
 
   protected removeSensor(sensorId: number, callback: (response: sensor.Response) => void): void {
+    if (!this._hasListeners) {
+      return;
+    }
     sensor.off(sensorId, callback);
     this.events = undefined;
+    this._hasListeners = false;
   }
 
   protected updateSensor(sensorId: number, callback: (response: sensor.Response) => void): void {
