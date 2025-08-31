@@ -1,3 +1,7 @@
+## 0.1.2
+
+* Fixed error when cancelling sensors subscription without any listener registered.
+
 ## 0.1.1
 
 * Fix data type cast error caused by sensors_plus_platform_interface
